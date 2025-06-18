@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Astro Dodge</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      text-align: center;
+    }
+    #gameCanvas {
+      background: #111;
+      display: block;
+      margin: 20px auto;
+      border: 3px solid white;
+    }
+    #restartBtn {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #restartBtn:hover {
+      background: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 Astro Dodge</h1>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <button id="restartBtn">🔁 Play Again</button>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let player, keys, asteroids, score, gameOver, highScore;
+
+    function initGame() {
+      player = { x: 180, y: 550, width: 40, height: 20 };
+      keys = {};
+      asteroids = [];
+      score = 0;
+      gameOver = false;
+      restartBtn.style.display = 'none';
+      highScore = localStorage.getItem("astroHighScore") || 0;
+      loop();
+    }
+
+    document.addEventListener('keydown', e => keys[e.key] = true);
+    document.addEventListener('keyup', e => keys[e.key] = false);
+
+    restartBtn.addEventListener('click', initGame);
+
+    function drawPlayer() {
+      ctx.fillStyle = 'lime';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    function drawAsteroids() {
+      ctx.fillStyle = 'red';
+      for (let a of asteroids) {
+        ctx.fillRect(a.x, a.y, a.size, a.size);
+      }
+    }
+
+    function update() {
+      if (keys['ArrowLeft']) player.x -= 5;
+      if (keys['ArrowRight']) player.x += 5;
+
+      player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+
+      for (let a of asteroids) {
+        a.y += a.speed;
+        if (
+          a.y + a.size > player.y &&
+          a.x < player.x + player.width &&
+          a.x + a.size > player.x
+        ) {
+          gameOver = true;
+        }
+      }
+
+      asteroids = asteroids.filter(a => a.y < canvas.height);
+
+      if (Math.random() < 0.05) {
+        asteroids.push({
+          x: Math.random() * (canvas.width - 30),
+          y: -30,
+          size: 30,
+          speed: 3 + Math.random() * 2
+        });
+      }
+
+      score++;
+    }
+
+    function drawScore() {
+      ctx.fillStyle = 'white';
+      ctx.font = '20px Arial';
+      ctx.fillText('Score: ' + score, 10, 30);
+      ctx.fillText('High Score: ' + highScore, 10, 60);
+    }
+
+    function endGame() {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'red';
+      ctx.font = '30px Arial';
+      ctx.fillText('💥 Game Over 💥', 90, 280);
+      ctx.fillStyle = 'white';
+      ctx.font = '20px Arial';
+      ctx.fillText('Score: ' + score, 150, 320);
+      ctx.fillText('High Score: ' + highScore, 130, 350);
+      restartBtn.style.display = 'inline-block';
+
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem("astroHighScore", highScore);
+      }
+    }
+
+    function loop() {
+      if (gameOver) {
+        endGame();
+        return;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      update();
+      drawPlayer();
+      drawAsteroids();
+      drawScore();
+      requestAnimationFrame(loop);
+    }
+
+    // Start the game for the first time
+    initGame();
+  </script>
+</body>
+</html>
